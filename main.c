@@ -29,14 +29,6 @@ typedef struct _mem_guard
 }mem_guard;
 
 
-/*allocator*/
-#define _a_gl(_g,LABEL,call)				\
-  {							\
-    if (call) goto LABEL;				\
-    else _g.alloc|=1<<(_g.cur++);			\
-  }
-#define _a_g(_g,call) _a_gl(_g,end,call)
-#define _a(call) _a_g(_g,call)
 /*freer*/
 #define _f_g(_g,call,n)	{ (call); _g.alloc&= ~(1<<n);}
 #define _f(call,n) _f_g(_g,call,n)
@@ -46,6 +38,16 @@ typedef struct _mem_guard
   { sprintf(_g.errstr, vl); *_g.lineno=pos; *_g.ret=err; goto LABEL; }
 #define gotoerr_g(_g, pos, err, vl...) gotoerr_gl(_g,end,pos,err,vl)
 #define gotoerr(pos, err, vl...) gotoerr_g(_g,pos,err,vl)
+
+/*allocator*/
+#define _a_gls(_g,LABEL,errstr,call) {                                  \     
+if (call)								\
+  { gotoerr_gl(_g,LABEL, 0, MEMORY_ERROR, errstr); }			\
+_g.alloc|=1<<(_g.cur++);						\
+}
+#define _a_gl(_g,LABEL,call) _a_gls(_g,LABEL,"Allocation Error",call)
+#define _a_g(_g,call) _a_gl(_g,end,call)
+#define _a(call) _a_g(_g,call)
 
 
 static
@@ -63,15 +65,6 @@ line_error(const char *line, int pos,
   for(i=0; i<pos; ++i) printf(" ");
   printf("^\n");
   return 0;
-}
-
-static
-_x_free(int n,...)
-{
-  va_list vl; va_start(vl, n);
-  while(n-->0)
-    free(va_arg(vl,void*));
-  va_end(vl);
 }
 
 const char *pref_op_strs[] = {"-"};
@@ -735,8 +728,8 @@ main(int ac, char *av)
   unsigned int next=0;
   char* line;
   astate state;
+  
   astate_mk(&state);
-  /*aifaleene_state state;*/
   for(;;)
     {
       line = readline(">");
