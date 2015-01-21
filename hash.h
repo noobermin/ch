@@ -9,13 +9,13 @@ hash(const char *s)
 {
   unsigned r=0;
   while(*s) r = r*31 + *s++;
-  return r;
+  return r % HASH_SIZE;
 }
 #else
 static inline unsigned						
 hash(const char *s)
 {
-  return hash_rsub(s,0);
+  return hash_rsub(s,0) % HASH_SIZE;
 }
 
 static inline unsigned						

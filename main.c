@@ -7,6 +7,7 @@
 #include <readline/history.h>
 #include <ctype.h>
 #include <assert.h>
+#include <math.h>
 
 #ifdef __STDC_NO_VLA__
 #error "Compile me on a platform/compiler that has VLAs!"
@@ -40,7 +41,7 @@ typedef struct _mem_guard
 #define gotoerr(pos, err, vl...) gotoerr_g(_g,pos,err,vl)
 
 /*allocator*/
-#define _a_gls(_g,LABEL,errstr,call) {                                  \     
+#define _a_gls(_g,LABEL,errstr,call) {                                  \
 if (call)								\
   { gotoerr_gl(_g,LABEL, 0, MEMORY_ERROR, errstr); }			\
 _g.alloc|=1<<(_g.cur++);						\
@@ -106,7 +107,7 @@ const char *token_strs[] =
    "opening parentheical",
    "closing parentheical",
    "end of line",
-   "say whut..."
+   "invalid"
   };
 
 const char *error_names[] =
@@ -256,6 +257,10 @@ operate(value l, value r, op_type op, value *ret)
     case MUL_OP:
       set_valuep(ret, get_value(l) * get_value(r));
       break;
+    case POW_OP:
+      set_valuep(ret, pow(get_value(l), get_value(r)));
+      break;
+		 
     case IDIV_OP:
       /*casting first*/
       l.uinteger = (unsigned long) get_value(l);
@@ -327,6 +332,7 @@ identifier_get(const char* id,
 	       ident** out)
 {
   int h = hash(id);
+
   ident_list *l = table[h];
   if (!l || !(l=ident_list_find(id,l)))
     return NOTFOUND_ERROR;  
@@ -355,7 +361,6 @@ identifier_add(ident* in,
 	       ident_hash_table table)
 {
   int h = hash(in->name);
-  ident cp;
   if (table[h] && ident_list_find(in->name,table[h]))
     return NOTFOUND_ERROR; /*here it is the opposite*/
   ident_list_pushp(table+h,in);
@@ -380,7 +385,7 @@ value_from_id(const char *id,
 #define tok_to_val(tok)							\
     if (tok.type == ID_TOKEN						\
 	&& value_from_id(tok.id, state->table, &tok) == NOTFOUND_ERROR)	\
-    {gotoerr(tok.real_pos, NOTFOUND_ERROR,"token not found.")}
+      {gotoerr(tok.real_pos, NOTFOUND_ERROR,"token \"%s\" not found.",tok.id);}
 
 evaluate(astate* state, const token_ibuf* expr, int len,
 	 token_ibuf* aux_stack,
@@ -664,16 +669,22 @@ aifaleene(char *line, astate* state)
   if(res.type != VALUE_TOKEN)
     gotoerr(res.real_pos, SYNTAX_ERROR, "Final token is not a value?");
   print_value(res.v); printf("\n");
-  
+  /*assign value to _*/
+  ident _=(ident){.type=VALUE_ID,
+		  .name = "_",
+		  .v = res.v};
+  int st;
+  if(st=identifier_setdefault(&_, state->table))
+    gotoerr(res.real_pos, st, "Error assigning to _");
   _f(token_ibuf_free(&aux_stack),1);
   ret = 0;
  end:
   if (_g.alloc & 0x01)
-    {printf("freeing tok\n"); token_ibuf_free(&tok_stack);}
+    {verbose(*state) && printf("freeing tok\n"); token_ibuf_free(&tok_stack);}
   if (_g.alloc & 0x02)
-    {printf("freeing aux\n"); token_ibuf_free(&aux_stack);}
+    {verbose(*state) && printf("freeing aux\n"); token_ibuf_free(&aux_stack);}
   if (_g.alloc & 0x04)
-    {printf("freeing out\n"); token_ibuf_free(&out_stack);}
+    {verbose(*state) && printf("freeing out\n"); token_ibuf_free(&out_stack);}
   if (! ret) return 0;
   /*error reporting*/
   print_err(ret);
