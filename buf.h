@@ -5,8 +5,11 @@
 #include <stdlib.h>
 #include "misc.h"
 
-#define STDSIZE 16
-#define _size(a) ( !(a)%STDSIZE ? (a) : (a)/STDSIZE+STDSIZE )
+#ifndef BUFSIZE
+#define BUFSIZE 16
+#endif
+
+#define _size(a) ( !(a)%BUFSIZE ? (a) : (a)/BUFSIZE+BUFSIZE )
 
 #define buf_dec(name)					\
   typedef struct _##name##_buf {			\
@@ -29,7 +32,7 @@
   int							\
   name##_buf_mk(name##_buf* b)				\
   {							\
-    return  name##_buf_mk_sz(b, STDSIZE);		\
+    return  name##_buf_mk_sz(b, BUFSIZE);		\
   }							\
 							\
   int							\
