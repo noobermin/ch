@@ -87,11 +87,8 @@
   PRE int								\
   name##_buf_memcpy(name##_buf* b, const name * in, size_t len)		\
   {						                        \
-    if (len > b->sz)						        \
-      {									\
-	if(!name##_buf_resize(b,len))					\
-	  return -1;							\
-      }									\
+    if (len > b->sz && !name##_buf_resize(b,len))			\
+      return -1;							\
     memcpy(b->data,in,len);						\
     return 0;								\
   }									\
