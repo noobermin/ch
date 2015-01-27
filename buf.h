@@ -11,9 +11,9 @@
 
 /*for inlining*/
 #if defined(BUFINLINE) || defined(INLINETYPES)
-#define PRE static inline
+#define BUFPRE static inline 
 #else
-#define PRE
+#define BUFPRE 
 #endif
 
 #define _size(a) ( !(a)%BUFSIZE ? (a) : (a)/BUFSIZE+BUFSIZE )
@@ -25,25 +25,25 @@
   }name##_buf;
 
 #define buf_dec_proto(name)						\
-  PRE int name##_buf_mk(name##_buf*);					\
-  PRE int name##_buf_mk_sz(name##_buf*,size_t);				\
-  PRE void name##_buf_free(name##_buf*);				\
-  PRE int name##_buf_resize(name##_buf*,size_t);			\
-  PRE int name##_buf_memcpy(name##_buf*, const name *, size_t);		\
-  PRE int name##_buf_cpy(name##_buf*, const name##_buf*);		\
-  PRE void name##_buf_set(name##_buf*, name);				\
-  PRE void name##_buf_setp(name##_buf*, const name*);
+  BUFPRE int name##_buf_mk(name##_buf*);					\
+  BUFPRE int name##_buf_mk_sz(name##_buf*,size_t);				\
+  BUFPRE void name##_buf_free(name##_buf*);				\
+  BUFPRE int name##_buf_resize(name##_buf*,size_t);			\
+  BUFPRE int name##_buf_memcpy(name##_buf*, const name *, size_t);		\
+  BUFPRE int name##_buf_cpy(name##_buf*, const name##_buf*);		\
+  BUFPRE void name##_buf_set(name##_buf*, name);				\
+  BUFPRE void name##_buf_setp(name##_buf*, const name*);
 /*end buf_dec*/
 
 #define buf_def(name)					\
   							\
-  PRE int							\
+  BUFPRE int							\
   name##_buf_mk(name##_buf* b)					\
   {								\
     return  name##_buf_mk_sz(b, BUFSIZE);			\
   }								\
   								\
-  PRE int							\
+  BUFPRE int							\
   name##_buf_mk_sz(name##_buf* b, size_t insize)	\
   {							\
     size_t allocsz = _size(insize);			\
@@ -54,14 +54,14 @@
     return 0;						\
   }							\
 							\
-  PRE void						\
+  BUFPRE void						\
   name##_buf_free(name##_buf* b)			\
   {							\
     free(b->data);					\
     b->sz=0;						\
   }							\
   							\
-  PRE int							\
+  BUFPRE int							\
   name##_buf_resize(name##_buf* b, size_t insize)		\
   {								\
     size_t allocsz = _size(insize);				\
@@ -78,13 +78,13 @@
     return 0;							\
   }								\
   								\
-  PRE int							\
+  BUFPRE int							\
   name##_buf_grow(name##_buf* b)				\
   {								\
     return name##_buf_resize(b,(b->sz)*2);			\
   }								\
   								\
-  PRE int								\
+  BUFPRE int								\
   name##_buf_memcpy(name##_buf* b, const name * in, size_t len)		\
   {						                        \
     if (len > b->sz && !name##_buf_resize(b,len))			\
@@ -93,7 +93,7 @@
     return 0;								\
   }									\
 									\
-  PRE int								\
+  BUFPRE int								\
   name##_buf_cpy(name##_buf* b, const name##_buf* in)			\
   {									\
     if (in->sz > b->sz)							\
@@ -105,7 +105,7 @@
     return 0;								\
   }									\
 									\
-  PRE void								\
+  BUFPRE void								\
   name##_buf_setp(name##_buf* in, const name* c)			\
   {									\
     int i;								\
@@ -114,12 +114,11 @@
     return;								\
   }									\
 									\
-  PRE void								\
+  BUFPRE void								\
   name##_buf_set(name##_buf* in, name c)				\
   {									\
     name##_buf_setp(in, &c);						\
   }
-#undef PRE
 /*end buf_def*/
 
 
