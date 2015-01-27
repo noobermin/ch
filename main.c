@@ -553,7 +553,7 @@ aifaleene(char *line, astate* state)
 	  {								\
 	    printf("How in the hell did this happen?\n");		\
 	    return -12345;						\
-	  }0							
+	  }							
       
       else if (type == OP_TOKEN)
 	{
