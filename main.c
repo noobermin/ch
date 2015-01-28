@@ -198,7 +198,7 @@ dump_stack_opt(const token_ibuf* in, const char* sep, int normal)
   int i = (in->pos)+1;
   while( --i >= 0)
     {
-      token cur = ibuf_getip(in, !normal ? i : in->pos-i );
+      token cur = ibuf_geti(*in, !normal ? i : in->pos-i );
       switch(cur.type)
 	{
 	case VALUE_TOKEN:
@@ -393,7 +393,7 @@ evaluate(astate* state, const token_ibuf* expr, int len,
 {
   for(int i=0; i<=len; ++i)
     {
-      token cur = ibuf_getip(expr,i);
+      token cur = ibuf_geti(*expr,i);
       if (cur.type == VALUE_TOKEN || cur.type == ID_TOKEN)
 	{
 	  token_ibuf_push(aux_stack,cur);
@@ -428,7 +428,7 @@ evaluate(astate* state, const token_ibuf* expr, int len,
 	}
       else if (cur.type == PREFIX_OP_TOKEN)
 	{
-	  int st = prefix_operate(&(ibuf_getp(aux_stack).v),cur.prefix_op);
+	  int st = prefix_operate(&(ibuf_get(*aux_stack).v),cur.prefix_op);
 	  /*should be no errors right now.*/
 	}
     } /*for each out element*/
@@ -644,16 +644,15 @@ aifaleene(char *line, astate* state)
 	while(!ibuf_empty(aux_stack) &&
 	      ibuf_get(aux_stack).type != OPEN_DELIM_TOKEN)
 	  {
-	    token_ibuf_push(&out_stack,
-			    token_ibuf_pop_unsafe(&aux_stack));
+	    token_ibuf_push(&out_stack, ibuf_pop(aux_stack));
 	  }
 	  //assert(ibuf_get(aux_stack).type == OPEN_DELIM_TOKEN);
-	token_ibuf_pop_unsafe(&aux_stack);
+	ibuf_pop(aux_stack);
 	break;
       }
     }
   while(!ibuf_empty(aux_stack))
-    token_ibuf_push(&out_stack,token_ibuf_pop_unsafe(&aux_stack));
+    token_ibuf_push(&out_stack, ibuf_pop(aux_stack));
   
   _f(token_ibuf_free(&tok_stack),0);
   verbose(*state) && dump_stack(&out_stack, ",");

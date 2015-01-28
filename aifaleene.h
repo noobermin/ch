@@ -144,12 +144,6 @@ typedef struct _token{
    : tok->type == OPEN_DELIM_TOKEN ? (tok->open = (r))		\
    : (tok->close=(r)))
 
-
-#include "buf.h"
-buf_dec(token);
-#include "ibuf.h"
-ibuf_dec(token);
-
 typedef struct _function
 {
   int i; //hurr
@@ -173,10 +167,16 @@ typedef struct _ident
   };
 }ident;
 
+#define INLINETYPES
+#include "buf.h"
+#include "ibuf.h"
 #include "list.h"
-list_dec(ident);
 #include "hash.h"
+buf_dec(token);
+ibuf_dec(token);
+list_dec(ident);
 hash_dec(ident);
+#undef INLINETYPES
 
 typedef struct _astate{
   ident_hash_table table;
