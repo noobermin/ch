@@ -144,10 +144,6 @@ isident(int in)
 { return isalphanum(in) || in == '_'; }*/
 
 static
-iswhitespace(int in)
-{ return in == ' ' || in == '\t'; }
-
-static
 isendline(int in)
 { return in == '\0'; }
 
@@ -193,41 +189,39 @@ print_value(value v)
 #define print_err(code)				\
   printf(">>> %s:\n",error_names[-(code)-1])
 
-dump_stack_opt(const token_ibuf* in, const char* sep, int normal)
-{
+dump_stack_opt(const token_ibuf* in, const char* sep, int normal) {
   int i = (in->pos)+1;
-  while( --i >= 0)
-    {
-      token cur = ibuf_geti(*in, !normal ? i : in->pos-i );
-      switch(cur.type)
-	{
-	case VALUE_TOKEN:
-	  print_value(cur.v);
-	  break;
-	case ID_TOKEN:
-	  printf("%s",cur.id);
-	  break;
-	case OP_TOKEN:
-	  printf("%s",op_strs[cur.op]);
-	  break;
-	case PREFIX_OP_TOKEN:
-	  printf("%s",pref_op_strs[cur.prefix_op]);
-	  break;
-	case OPEN_DELIM_TOKEN:
-	  printf("(");
-	  break;
-	case CLOSE_DELIM_TOKEN:
-	  printf(")");
-	  break;
-	}
-      puts(sep);
+  while( --i >= 0) {
+    token cur = ibuf_geti(*in, !normal ? i : in->pos-i );
+    switch(cur.type) {
+    case VALUE_TOKEN:
+      print_value(cur.v);
+      break;
+    case ID_TOKEN:
+      printf("%s",cur.id);
+      break;
+    case OP_TOKEN:
+      printf("%s",op_strs[cur.op]);
+      break;
+    case PREFIX_OP_TOKEN:
+      printf("%s",pref_op_strs[cur.prefix_op]);
+      break;
+    case OPEN_DELIM_TOKEN:
+      printf("(");
+      break;
+    case CLOSE_DELIM_TOKEN:
+      printf(")");
+      break;
+
+    default: break;
     }
-  return printf("\n");
+    fputs(sep,stdout);
+  }
+  return puts("");
 }
 #define dump_stack(st,sep) dump_stack_opt(st,sep,-1)
 
-prefix_operate(value *r, prefix_op_type pre)
-{
+prefix_operate(value *r, prefix_op_type pre) {
   switch(pre)
     {
     case NEG_PREF:
@@ -242,8 +236,7 @@ prefix_operate(value *r, prefix_op_type pre)
 #define zero(v)						\
   (v.type == UINTEGER_VALUE || v.type == INTEGER_VALUE  ? 0 : 0.0)
 
-operate(value l, value r, op_type op, value *ret)
-{
+operate(value l, value r, op_type op, value *ret) {
   /*handle promotion*/
   ret->type = max(l.type,r.type);
   switch(op)
@@ -259,8 +252,7 @@ operate(value l, value r, op_type op, value *ret)
       break;
     case POW_OP:
       set_valuep(ret, pow(get_value(l), get_value(r)));
-      break;
-		 
+      break;		 
     case IDIV_OP:
       /*casting first*/
       l.uinteger = (unsigned long) get_value(l);
@@ -311,6 +303,7 @@ operate(value l, value r, op_type op, value *ret)
       ret->type = BOOL_VALUE;
       set_valuep(ret, get_value(l) || get_value(r));
       break;
+    default: break;
     }
   return 0;
 }
@@ -320,8 +313,7 @@ operate(value l, value r, op_type op, value *ret)
 
 static ident_list*
 ident_list_find(const char* id,
-		ident_list* l)
-{
+		ident_list* l) {
   for(;l!=NULL; l=l->next)
     if ( !strcmp(l->data.name,id) ) break;
   return l;
@@ -329,8 +321,7 @@ ident_list_find(const char* id,
 		
 identifier_get(const char* id,
 	       ident_hash_table table,
-	       ident** out)
-{
+	       ident** out) {
   int h = hash(id);
 
   ident_list *l = table[h];
@@ -341,25 +332,20 @@ identifier_get(const char* id,
 }
 
 identifier_setdefault(const ident* in,
-		      ident_hash_table table)
-{
+		      ident_hash_table table) {
   int h = hash(in->name);
   
   ident_list *l;
-  if (table[h] && (l=ident_list_find(in->name,table[h])))
-    {
-      l->data = *in; return 0;
-    }
+  if (table[h]
+      && (l=ident_list_find(in->name,table[h])))
+    { l->data = *in; return 0;} 
   else
-    {
-      return ident_list_pushp(table+h,in) ? MEMORY_ERROR : 0;
-    }
+    { return ident_list_pushp(table+h,in) ? MEMORY_ERROR : 0; }
 }
 		      
 
 identifier_add(ident* in,
-	       ident_hash_table table)
-{
+	       ident_hash_table table) {
   int h = hash(in->name);
   if (table[h] && ident_list_find(in->name,table[h]))
     return NOTFOUND_ERROR; /*here it is the opposite*/
@@ -369,11 +355,10 @@ identifier_add(ident* in,
 
 value_from_id(const char *id,
 	      ident_hash_table table,
-	      token *ret)
-{
+	      token *ret) {
   ident* idp;
   int st;
-  if(st = identifier_get(id,table,&idp)) return st;
+  if((st = identifier_get(id,table,&idp))) return st;
   if(idp->type != VALUE_ID)
     return NOTFOUND_ERROR;
   ret->v    = idp->v;
@@ -411,14 +396,14 @@ evaluate(astate* state, const token_ibuf* expr, int len,
 		gotoerr(l.real_pos, SYNTAX_ERROR, "cannot assign to non-identifier");
 	      tok_to_val(r);
 	      id.v = v = r.v; id.type = VALUE_ID; strncpy(id.name, l.id, ID_LEN);
-	      if (st=identifier_setdefault(&id, state->table))
+	      if ((st=identifier_setdefault(&id, state->table)))
 		gotoerr(cur.real_pos, st, "failed in assignment.");
 	    }
 	  else /*normal operator*/
 	    {
 	      tok_to_val(l);
 	      tok_to_val(r);
-	      if (st=operate(l.v,r.v,cur.op,&v))
+	      if ((st=operate(l.v,r.v,cur.op,&v)))
 		gotoerr(cur.real_pos, st, "failed in operation %s", op_strs[cur.op]);
 	    }
 	  token_ibuf_push(aux_stack,
@@ -428,7 +413,7 @@ evaluate(astate* state, const token_ibuf* expr, int len,
 	}
       else if (cur.type == PREFIX_OP_TOKEN)
 	{
-	  int st = prefix_operate(&(ibuf_get(*aux_stack).v),cur.prefix_op);
+	  /*int st =*/prefix_operate(&(ibuf_get(*aux_stack).v),cur.prefix_op);
 	  /*should be no errors right now.*/
 	}
     } /*for each out element*/
@@ -440,12 +425,12 @@ aifaleene(char *line, astate* state)
 {
   /*general stuff*/
   int n=0,i,len = strlen(line),ret=0;
-  int pdepth=0;
+  int pdepth=0,st;
   token_ibuf tok_stack, aux_stack, out_stack;
-  token res;
+  token res; ident tmp;
   char errstr[max(len+1,64)];
 
-  /*state information*/
+  /*parsing information*/
   large_mask expected = VALUE_TOKEN |
     ID_TOKEN | OPEN_DELIM_TOKEN | PREFIX_OP_TOKEN |
     ENDL_TOKEN;
@@ -460,8 +445,7 @@ aifaleene(char *line, astate* state)
 			    .ret=&ret};
   _a(token_ibuf_mk_sz(&tok_stack,len));
   /*parsing*/
-  while(-1)
-    {
+  for(;;) {
       token tok;
       token_type type;
       /*skip whitespace*/
@@ -474,7 +458,6 @@ aifaleene(char *line, astate* state)
 	{
 #define FLT 37 
 	  char base=FLT;
-	  char im  = 0;
 	  char *end;
 	  if ( (*(line+n)) == '0')
 	    {
@@ -649,6 +632,8 @@ aifaleene(char *line, astate* state)
 	  //assert(ibuf_get(aux_stack).type == OPEN_DELIM_TOKEN);
 	ibuf_pop(aux_stack);
 	break;
+	
+      default: break;
       }
     }
   while(!ibuf_empty(aux_stack))
@@ -669,11 +654,10 @@ aifaleene(char *line, astate* state)
     gotoerr(res.real_pos, SYNTAX_ERROR, "Final token is not a value?");
   print_value(res.v); printf("\n");
   /*assign value to _*/
-  ident _=(ident){.type=VALUE_ID,
-		  .name = "_",
-		  .v = res.v};
-  int st;
-  if(st=identifier_setdefault(&_, state->table))
+  tmp = (ident){.type=VALUE_ID,
+		.name = "_",
+		.v = res.v};
+  if((st=identifier_setdefault(&tmp, state->table)))
     gotoerr(res.real_pos, st, "Error assigning to _");
   _f(token_ibuf_free(&aux_stack),1);
   ret = 0;
@@ -725,17 +709,15 @@ inspect_state(astate* in)
 const char online_help[] = "\
 usage:\n\
   At the > prompt, enter an expression to evaluate it.\n\
-  For special commands, use a command starting with \#.\n\
+  For special commands, use a command starting with #.\n\
 commands:\n\
   #h           Output this help.\n\
   #i           Inspect the hash table of identifiers.\n\
   #v           Toggle verbosity during evaluation.\n\
   #q           Quit.";
 
-main(int ac, char *av)
+main(int ac, char *av[])
 {
-  int quit;
-  unsigned int next=0;
   char* line;
   astate state;
   
