@@ -29,7 +29,6 @@
   IBUFPRE int name##_ibuf_push(name##_ibuf*, name );			\
   IBUFPRE int name##_ibuf_pushp(name##_ibuf*, const name* );		\
   IBUFPRE int name##_ibuf_pop(name##_ibuf*, name*);			\
-  IBUFPRE name name##_ibuf_pop_unsafe(name##_ibuf*);			\
   IBUFPRE int name##_ibuf_popv(name##_ibuf*, size_t,...);		\
 /*end ibuf_dec*/
 
