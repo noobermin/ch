@@ -18,6 +18,8 @@
 
 #define _size(a) ( !(a)%BUFSIZE ? (a) : (a)/BUFSIZE+BUFSIZE )
 
+#define buf_get(buf,i) (&(buf).data)[(i)]
+
 #define buf_dec_type(name)				\
   typedef struct _##name##_buf {			\
     name *data;						\
@@ -34,7 +36,6 @@
   BUFPRE void name##_buf_set(name##_buf*, name);			\
   BUFPRE void name##_buf_setp(name##_buf*, const name*);
 /*end buf_dec*/
-
 
 #define buf_def(name)						\
 								\
