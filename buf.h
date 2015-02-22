@@ -18,13 +18,21 @@
 
 #define _size(a) ( !(a)%BUFSIZE ? (a) : (a)/BUFSIZE+BUFSIZE )
 
-#define buf_get(buf,i) (&(buf).data)[(i)]
+#define buf_get(buf,i) (&((buf).data)[(i)]
 
-#define buf_dec_type(name)				\
-  typedef struct _##name##_buf {			\
-    name *data;						\
+/*gbuf -- a generic buffer*/
+typedef struct _gbuf {
+  void* data;
+  size_t sz;
+}gbuf;
+
+#define gbuf_get(type, buf, i) ((type*)((buf).data))[(i)]
+
+#define buf_dec_type(type)				\
+  typedef struct _##type##_buf {			\
+    type *data;                           		\
     size_t sz;						\
-  }name##_buf;
+  }type##_buf;
 
 #define buf_dec_proto(name)						\
   BUFPRE int name##_buf_mk(name##_buf*);				\
@@ -35,86 +43,159 @@
   BUFPRE int name##_buf_cpy(name##_buf*, const name##_buf*);		\
   BUFPRE void name##_buf_set(name##_buf*, name);			\
   BUFPRE void name##_buf_setp(name##_buf*, const name*);
-/*end buf_dec*/
+/*end buf_dec_proto*/
 
-#define buf_def(name)						\
-								\
-  BUFPRE int							\
-  name##_buf_mk(name##_buf* b) {				\
-    return  name##_buf_mk_sz(b, BUFSIZE);			\
-  }								\
-  								\
-  BUFPRE int							\
-  name##_buf_mk_sz(name##_buf* b, size_t insize) {		\
+#define gbuf_dec_proto(name)						\
+  BUFPRE int name##_gbuf_mk(gbuf*);					\
+  BUFPRE int name##_gbuf_mk_sz(gbuf*,size_t);				\
+  BUFPRE void name##_gbuf_free(gbuf*);					\
+  BUFPRE int name##_gbuf_resize(gbuf*,size_t);				\
+  BUFPRE int name##_gbuf_memcpy(gbuf*, const name *, size_t);		\
+  BUFPRE int name##_gbuf_cpy(gbuf*, const gbuf*);			\
+  BUFPRE void name##_gbuf_set(gbuf*, name);				\
+  BUFPRE void name##_gbuf_setp(gbuf*, const name*);
+/*end gbuf_dec_proto*/
+
+
+
+
+/*implementations*/
+#define _buf_mk_sz(type, data, sz, insize) {			\
     size_t allocsz = _size(insize);				\
-    b->data = calloc(allocsz,sizeof(name));			\
-    if(!b->data) return -1;					\
-    b->sz=allocsz;						\
+    if(!( data = calloc(allocsz,sizeof(type)) ))		\
+      return -1;						\
+    sz = allocsz;						\
     return 0;							\
-  }								\
-  								\
-  BUFPRE void							\
-  name##_buf_free(name##_buf* b) {				\
-    free(b->data);						\
-    b->data = (name*) (b->sz = 0);				\
+  }
+
+#define _buf_free(type, data, sz)		\
+  { free(data); data = (type*) (sz = 0 );}
+
+#define _buf_resize(type, data, sz, insize) {		\
+    size_t allocsz = _size(insize);			\
+    void * tmp;						\
+    if(!( tmp = realloc(data,allocsz*sizeof(type)) ))	\
+      return -1;					\
+    data = tmp; sz = allocsz*sizeof(type);		\
+    return 0;						\
+  }							\
+
+#define _buf_set(type, data, sz, constvalp) {	\
+    for(int i=0; i < sz; ++i)			\
+      memcpy(((type*)data)+i, c, sizeof(type));	\
+  }						\
+
+
+#define buf_def(type)						\
+  BUFPRE int							\
+  type##_buf_mk(type##_buf* b) {				\
+    return  type##_buf_mk_sz(b, BUFSIZE);			\
   }								\
   								\
   BUFPRE int							\
-  name##_buf_resize(name##_buf* b, size_t insize) {		\
-    size_t allocsz = _size(insize);				\
-    name* tmp;							\
-    if (allocsz == b->sz)  return 0;				\
-    tmp = (name*)calloc(allocsz,sizeof(name));			\
-    if(!tmp) return -1;						\
-    memcpy(tmp, b->data, min(b->sz,allocsz));			\
-    free(b->data);						\
-    b->data = tmp;						\
-    b->sz = allocsz;						\
-    return 0;							\
-  }								\
+  type##_buf_mk_sz(type##_buf* b, size_t insize)		\
+  { _buf_mk_sz(type, b->data, b->sz,insize); }			\
   								\
-  BUFPRE int							\
-  name##_buf_grow(name##_buf* b) {				\
-    return name##_buf_resize(b,(b->sz)*2);			\
-  }								\
-  								\
+  BUFPRE void								\
+  type##_buf_free(type##_buf* b)					\
+  { _buf_free(type, b->data, b->sz); }					\
+  									\
   BUFPRE int								\
-  name##_buf_memcpy(name##_buf* b, const name * in, size_t len)	{	\
+  type##_buf_resize(type##_buf* b, size_t insize)			\
+  { _buf_resize(type,b->data,b->sz,insize); }				\
+  									\
+  BUFPRE int								\
+  type##_buf_grow(type##_buf* b) {					\
+    return type##_buf_resize(b,(b->sz)*2);				\
+  }									\
+  									\
+  BUFPRE int								\
+  type##_buf_memcpy(type##_buf* b, const type * in, size_t len)	{	\
     if (len > b->sz							\
-	&& !name##_buf_resize(b,len)) return -1;			\
+	&& !type##_buf_resize(b,len)) return -1;			\
     memcpy(b->data,in,len);						\
     return 0;								\
   }									\
 									\
   BUFPRE int								\
-  name##_buf_cpy(name##_buf* b, const name##_buf* in) {	  		\
-    return name##_buf_memcpy(b, in->data,in->sz);			\
+  type##_buf_cpy(type##_buf* b, const type##_buf* in) {	  		\
+    return type##_buf_memcpy(b, in->data,in->sz);			\
   }									\
 									\
   BUFPRE void								\
-  name##_buf_setp(name##_buf* in, const name* c) {			\
-    for(int i=0;i<in->sz;++i)						\
-      memcpy(in->data+i, c, sizeof(name));				\
+  type##_buf_setp(type##_buf* b, const type* c) {			\
+    _buf_set(type, b->data, b->sz, c);					\
   }									\
 									\
   BUFPRE void								\
-  name##_buf_set(name##_buf* in, name c) {				\
-    name##_buf_setp(in, &c);						\
+  type##_buf_set(type##_buf* in, type c) {				\
+    type##_buf_setp(in, &c);						\
   }
 /*end buf_def*/
+
+#define gbuf_def(type)						\
+  BUFPRE int							\
+  type##_gbuf_mk(gbuf* b) {					\
+    return  type##_gbuf_mk_sz(b, BUFSIZE);			\
+  }								\
+  								\
+  BUFPRE int							\
+  type##_gbuf_mk_sz(gbuf* b, size_t insize)			\
+  { _buf_mk_sz(type, b->data, b->sz,insize); }			\
+  								\
+  BUFPRE void								\
+  type##_gbuf_free(gbuf* b)						\
+  { _buf_free(type, b->data, b->sz); }					\
+  									\
+  BUFPRE int								\
+  type##_gbuf_resize(gbuf* b, size_t insize)				\
+  { _buf_resize(type,b->data,b->sz,insize); }				\
+  									\
+  BUFPRE int								\
+  type##_gbuf_grow(gbuf* b) {						\
+    return type##_gbuf_resize(b,(b->sz)*2);				\
+  }									\
+  									\
+  BUFPRE int								\
+  type##_gbuf_memcpy(gbuf* b, const type * in, size_t len) {		\
+    if (len > b->sz							\
+	&& !type##_gbuf_resize(b,len)) return -1;			\
+    memcpy(b->data,in,len);						\
+    return 0;								\
+  }									\
+  									\
+  BUFPRE int								\
+  type##_gbuf_cpy(gbuf* b, const gbuf* in) {				\
+    return type##_gbuf_memcpy(b, in->data,in->sz);			\
+  }									\
+  									\
+  BUFPRE void								\
+  type##_gbuf_setp(gbuf* b, const type* c) {				\
+    _buf_set(type, b->data, b->sz, c);					\
+  }									\
+									\
+  BUFPRE void								\
+  type##_gbuf_set(gbuf* in, type c) {					\
+    type##_gbuf_setp(in, &c);						\
+  }
+/*end gbuf_def*/
 
 
 /*for inlining*/
 #if defined(BUFINLINE) || defined(INLINETYPES)
-#define buf_dec(name)				\
-  buf_dec_type(name);				\
-  buf_dec_proto(name);				\
-  buf_def(name);				
-
+#define buf_dec(type)				\
+  buf_dec_type(type);				\
+  buf_dec_proto(type);				\
+  buf_def(type);
+#define gbuf_dec(type)				\
+  gbuf_dec_proto(type);				\
+  gbuf_def(type);				
 #else
-#define buf_dec(name)				\
-  buf_dec_type(name);				\
-  buf_dec_proto(name);
+#define buf_dec(type)				\
+  buf_dec_type(type);				\
+  buf_dec_proto(type);
+#define gbuf_dec(type)				\
+  gbuf_dec_proto(type);
 #endif
 
 #endif /*_BUF_H_*/
