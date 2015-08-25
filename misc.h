@@ -54,7 +54,7 @@ to_1st(char* str)
 }
 
 static inline char*
-getline(char *buf, size_t s, FILE* f)
+getlinein(char *buf, size_t s, FILE* f)
 {
   ( (buf=fgets(buf,s,f)) != NULL) && (buf[strlen(buf)-1]= '\0');
   return buf;
