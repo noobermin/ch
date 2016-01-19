@@ -24,35 +24,35 @@
 typedef struct _gbuf {
   void* data;
   size_t sz;
-}gbuf;
+} gbuf;
 
 #define gbuf_get(type, buf, i) ((type*)((buf).data))[(i)]
 
-#define buf_dec_type(type)				\
+#define buf_dec_type(type)                  \
   typedef struct _##type##_buf {			\
-    type *data;                           		\
-    size_t sz;						\
+    type *data;                             \
+    size_t sz;                              \
   }type##_buf;
 
-#define buf_dec_proto(name)						\
-  BUFPRE int name##_buf_mk(name##_buf*);				\
-  BUFPRE int name##_buf_mk_sz(name##_buf*,size_t);			\
-  BUFPRE void name##_buf_free(name##_buf*);				\
-  BUFPRE int name##_buf_resize(name##_buf*,size_t);			\
+#define buf_dec_proto(name)                                         \
+  BUFPRE int name##_buf_mk(name##_buf*);                            \
+  BUFPRE int name##_buf_mk_sz(name##_buf*,size_t);                  \
+  BUFPRE void name##_buf_free(name##_buf*);                         \
+  BUFPRE int name##_buf_resize(name##_buf*,size_t);                 \
   BUFPRE int name##_buf_memcpy(name##_buf*, const name *, size_t);	\
   BUFPRE int name##_buf_cpy(name##_buf*, const name##_buf*);		\
-  BUFPRE void name##_buf_set(name##_buf*, name);			\
+  BUFPRE void name##_buf_set(name##_buf*, name);                    \
   BUFPRE void name##_buf_setp(name##_buf*, const name*);
 /*end buf_dec_proto*/
 
-#define gbuf_dec_proto(name)						\
-  BUFPRE int name##_gbuf_mk(gbuf*);					\
-  BUFPRE int name##_gbuf_mk_sz(gbuf*,size_t);				\
-  BUFPRE void name##_gbuf_free(gbuf*);					\
-  BUFPRE int name##_gbuf_resize(gbuf*,size_t);				\
+#define gbuf_dec_proto(name)                                        \
+  BUFPRE int name##_gbuf_mk(gbuf*);                                 \
+  BUFPRE int name##_gbuf_mk_sz(gbuf*,size_t);                       \
+  BUFPRE void name##_gbuf_free(gbuf*);                              \
+  BUFPRE int name##_gbuf_resize(gbuf*,size_t);                      \
   BUFPRE int name##_gbuf_memcpy(gbuf*, const name *, size_t);		\
-  BUFPRE int name##_gbuf_cpy(gbuf*, const gbuf*);			\
-  BUFPRE void name##_gbuf_set(gbuf*, name);				\
+  BUFPRE int name##_gbuf_cpy(gbuf*, const gbuf*);                   \
+  BUFPRE void name##_gbuf_set(gbuf*, name);                         \
   BUFPRE void name##_gbuf_setp(gbuf*, const name*);
 /*end gbuf_dec_proto*/
 
