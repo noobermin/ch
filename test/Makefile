@@ -3,12 +3,12 @@ WARNINGS=-Wno-implicit-int -Wno-return-type
 CFLAGS=-std=c11 $(WARNINGS) -g $(INCLUDE)
 CC=gcc
 
-all: bufset-test
+all: buf-set-test
 
-bufset-test: bufset-test.c ../buf.h
-	$(CC) $(CFLAGS) bufset-test.c -o bufset-test  
+buf-set-test: buf-set-test.c ../buf.h
+	$(CC) $(CFLAGS) buf-set-test.c -o buf-set-test  
 
 clean:
-	rm bufset-test
+	rm buf-set-test
 
 .Phony: all clean
