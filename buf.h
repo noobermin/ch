@@ -34,16 +34,25 @@ typedef struct _gbuf {
     size_t sz;                              \
   }type##_buf;
 
-#define buf_dec_proto(name)                                         \
-  BUFPRE int name##_buf_mk(name##_buf*);                            \
-  BUFPRE int name##_buf_mk_sz(name##_buf*,size_t);                  \
-  BUFPRE void name##_buf_free(name##_buf*);                         \
-  BUFPRE int name##_buf_resize(name##_buf*,size_t);                 \
-  BUFPRE int name##_buf_memcpy(name##_buf*, const name *, size_t);	\
-  BUFPRE int name##_buf_cpy(name##_buf*, const name##_buf*);		\
-  BUFPRE void name##_buf_set(name##_buf*, name);                    \
+#define buf_dec_proto_arraytype(name)                         \
+  BUFPRE int name##_buf_mk(name##_buf*);                      \
+  BUFPRE int name##_buf_mk_sz(name##_buf*,size_t);            \
+  BUFPRE void name##_buf_free(name##_buf*);                   \
+  BUFPRE int name##_buf_resize(name##_buf*,size_t);           \
+  BUFPRE int name##_buf_memcpy(name##_buf*,                   \
+                               const name *,                  \
+                               size_t);                       \
+  BUFPRE int name##_buf_cpy(name##_buf*, const name##_buf*);  \
+  BUFPRE void name##_buf_set(name##_buf*, const name);
+
+#define buf_dec_proto(name)                     \
+  buf_dec_proto_arraytype(name);                \
   BUFPRE void name##_buf_setp(name##_buf*, const name*);
-/*end buf_dec_proto*/
+
+
+
+
+/*End buf_dec_proto*/
 
 #define gbuf_dec_proto(name)                                        \
   BUFPRE int name##_gbuf_mk(gbuf*);                                 \
@@ -87,7 +96,7 @@ typedef struct _gbuf {
   }                                             \
 
 
-#define buf_def(type)                               \
+#define buf_def_main(type)                          \
   BUFPRE int                                        \
   type##_buf_mk(type##_buf* b) {                    \
     return  type##_buf_mk_sz(b, BUFSIZE);			\
@@ -128,75 +137,100 @@ typedef struct _gbuf {
                  const type##_buf* in) {            \
     return type##_buf_memcpy(b,                     \
                              in->data,in->sz);      \
-  }                                                 \
-                                                    \
-                                                    \
+  }
+
+#define buf_def_assignable(type)                    \
   BUFPRE void                                       \
-  type##_buf_setp(type##_buf* b, const type* c) {   \
+  type##_buf_setp(type##_buf* b,                    \
+                  const type* c) {                  \
     _buf_set(type, b->data, b->sz, c);				\
   }                                                 \
                                                     \
   BUFPRE void                                       \
-  type##_buf_set(type##_buf* in, type c) {          \
-    type##_buf_setp(in, &c);						\
+  type##_buf_set(type##_buf* b, const type c) {     \
+    type##_buf_setp(b, &c);                         \
   }
+
+#define buf_def_arrtype(type)                       \
+  BUFPRE void                                       \
+  type##_buf_set(type##_buf* b,                     \
+                 const type c) {                    \
+    _buf_set(type, b->data, b->sz, c);				\
+  }                                                 \
 
 /*end buf_def*/
 
-#define gbuf_def(type)                                          \
-  BUFPRE int                                                    \
-  type##_gbuf_mk(gbuf* b) {                                     \
-    return  type##_gbuf_mk_sz(b, BUFSIZE);                      \
-  }                                                             \
-                                                                \
-  BUFPRE int                                                    \
-  type##_gbuf_mk_sz(gbuf* b, size_t insize)                     \
-  { _buf_mk_sz(type, b->data, b->sz,insize); }                  \
-                                                                \
-  BUFPRE void                                                   \
-  type##_gbuf_free(gbuf* b)                                     \
-  { _buf_free(type, b->data, b->sz); }                          \
-                                                                \
-  BUFPRE int                                                    \
-  type##_gbuf_resize(gbuf* b, size_t insize)                    \
-  { _buf_resize(type,b->data,b->sz,insize); }                   \
-                                                                \
-  BUFPRE int                                                    \
-  type##_gbuf_grow(gbuf* b) {                                   \
-    return type##_gbuf_resize(b,(b->sz)*2);                     \
-  }                                                             \
-                                                                \
-  BUFPRE int                                                    \
-  type##_gbuf_memcpy(gbuf* b, const type * in, size_t len) {    \
-    if (len > b->sz                                             \
-        && !type##_gbuf_resize(b,len)) return -1;               \
-    memcpy(b->data,in,len);                                     \
-    return 0;                                                   \
-  }                                                             \
-                                                                \
-  BUFPRE int                                                    \
-  type##_gbuf_cpy(gbuf* b, const gbuf* in) {                    \
-    return type##_gbuf_memcpy(b, in->data,in->sz);              \
-  }                                                             \
-                                                                \
-  BUFPRE void                                                   \
-  type##_gbuf_setp(gbuf* b, const type* c) {                    \
-    _buf_set(type, b->data, b->sz, c);                          \
-  }                                                             \
-                                                                \
-  BUFPRE void                                                   \
-  type##_gbuf_set(gbuf* in, type c) {                           \
-    type##_gbuf_setp(in, &c);                                   \
+#define gbuf_def(type)                             \
+  BUFPRE int                                       \
+  type##_gbuf_mk(gbuf* b) {                        \
+    return  type##_gbuf_mk_sz(b, BUFSIZE);         \
+  }                                                \
+                                                   \
+  BUFPRE int                                       \
+  type##_gbuf_mk_sz(gbuf* b, size_t insize)        \
+  { _buf_mk_sz(type, b->data, b->sz,insize); }     \
+                                                   \
+  BUFPRE void                                      \
+  type##_gbuf_free(gbuf* b)                        \
+  { _buf_free(type, b->data, b->sz); }             \
+                                                   \
+  BUFPRE int                                       \
+  type##_gbuf_resize(gbuf* b, size_t insize)       \
+  { _buf_resize(type,b->data,b->sz,insize); }      \
+                                                   \
+  BUFPRE int                                       \
+  type##_gbuf_grow(gbuf* b) {                      \
+    return type##_gbuf_resize(b,(b->sz)*2);        \
+  }                                                \
+                                                   \
+  BUFPRE int                                       \
+  type##_gbuf_memcpy(gbuf* b,                      \
+                     const type * in,              \
+                     size_t len) {                 \
+    if (len > b->sz && !type##_gbuf_resize(b,len)) \
+      return -1;                                   \
+    memcpy(b->data,in,len);                        \
+    return 0;                                      \
+  }                                                \
+                                                   \
+  BUFPRE int                                       \
+  type##_gbuf_cpy(gbuf* b, const gbuf* in) {       \
+    return type##_gbuf_memcpy(b, in->data,in->sz); \
+  }                                                \
+                                                   \
+  BUFPRE void                                      \
+  type##_gbuf_setp(gbuf* b, const type* c) {       \
+    _buf_set(type, b->data, b->sz, c);             \
+  }                                                \
+                                                   \
+  BUFPRE void                                      \
+  type##_gbuf_set(gbuf* in, type c) {              \
+    type##_gbuf_setp(in, &c);                      \
   }
 /*end gbuf_def*/
 
+#define buf_def(type)       \
+  buf_def_main(type);       \
+  buf_def_assignable(type); 
 
-/*for inlining*/
+#define buf_def_arraytype(type)       \
+  buf_def_main(type);                 \
+  buf_def_arrtype(type); 
+
+                    
+
+/*For inlining*/
 #if defined(BUFINLINE) || defined(INLINETYPES)
 #define buf_dec(type)				\
   buf_dec_type(type);				\
   buf_dec_proto(type);				\
   buf_def(type);
+
+#define buf_dec_arraytype(type)     \
+  buf_dec_type(type);				\
+  buf_dec_proto_arraytype(type);    \
+  buf_def_arraytype(type);                    
+
 #define gbuf_dec(type)				\
   gbuf_dec_proto(type);				\
   gbuf_def(type);				
@@ -204,6 +238,10 @@ typedef struct _gbuf {
 #define buf_dec(type)				\
   buf_dec_type(type);				\
   buf_dec_proto(type);
+#define buf_dec_arraytype(type)     \
+  buf_dec_type(type);				\
+  buf_dec_proto_arraytype(type);
+
 #define gbuf_dec(type)				\
   gbuf_dec_proto(type);
 #endif
