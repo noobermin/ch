@@ -1,14 +1,14 @@
 INCLUDE=-I..
-WARNINGS=-Wno-implicit-int -Wno-return-type #-Wall
+WARNINGS=-Wno-implicit-int -Wno-return-type
 CFLAGS=-std=c11 $(WARNINGS) -g $(INCLUDE)
 CC=gcc
 
-all: buftest
+all: bufset-test
 
-buftest: buftest.c
-	$(CC) $(CFLAGS) buftest.c -o buftest  
+bufset-test: bufset-test.c ../buf.h
+	$(CC) $(CFLAGS) bufset-test.c -o bufset-test  
 
 clean:
-	rm buftest
+	rm bufset-test
 
 .Phony: all clean
