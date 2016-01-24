@@ -122,14 +122,22 @@ typedef struct _gbuf {
   }                                                 \
                                                     \
   BUFPRE int                                        \
+  type##_buf_memcpy_at(type##_buf* b,               \
+                       size_t st,                   \
+                       const type * in,             \
+                       size_t len)	{               \
+    if (len+st > b->sz &&                           \
+        !type##_buf_resize(b,len+st))               \
+      return -1;                                    \
+    memcpy(b->data+st,in,len);                      \
+    return 0;                                       \
+  }                                                 \
+                                                    \
+  BUFPRE int                                        \
   type##_buf_memcpy(type##_buf* b,                  \
                     const type * in,                \
                     size_t len)	{                   \
-    if (len > b->sz	&&                              \
-        !type##_buf_resize(b,len))                  \
-      return -1;                                    \
-    memcpy(b->data,in,len);                         \
-    return 0;                                       \
+    return type##_buf_memcpy_at(b, 0 in, len);      \
   }                                                 \
                                                     \
   BUFPRE int                                        \
