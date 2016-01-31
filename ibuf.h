@@ -82,13 +82,14 @@
   name##_ibuf_pop(name##_ibuf* in, name* out ) {             \
     if (in->pos == -1) /*stack is empty*/                    \
       return IBUF_EMPTY;                                     \
-    name ret = in->buf.data[in->pos];                        \
+    if (out) {                                               \
+      memcpy(out, in-bud.data+in->pos, sizeof(name));        \
+    }                                                        \
     if ( --(in->pos) <= in->buf.sz/2                         \
          && ++(in->magic) >IBUF_MAGIC_MAX                    \
-         && name##_buf_resize(&(in->buf),in->buf.sz/2))      \
+         && !name##_buf_resize(&(in->buf),in->buf.sz/2))     \
       /*if the resize fails, it's okay.*/                    \
       in->magic = 0;/*we don't reset magic if it fails*/     \
-    *out = ret;                                              \
     return 0;                                                \
   }                                                          \
                                                              \
